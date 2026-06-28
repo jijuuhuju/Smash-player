@@ -1,44 +1,47 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>longer BROS 50</title>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>longer BROS HP</title>
     <style>
         body { font-family: sans-serif; background: #222; color: #fff; text-align: center; margin: 0; display: flex; flex-direction: column; justify-content: center; height: 100vh; user-select: none; }
-        .screen { display: none; } .active { display: block; }
+        .screen { display: none; } .active { display: flex; flex-direction: column; align-items: center; }
         .char-btn, .mode-btn { font-size: 1.5rem; background: #444; color: #fff; border: 2px solid #666; padding: 10px; margin: 5px; border-radius: 8px; }
         .selected { border-color: #007bff; background: #1a237e; }
-        canvas { background: #111; display: block; margin: 10px auto; border: 2px solid #444; }
-        .btn { background: #555; color: #fff; border: none; padding: 12px; margin: 3px; font-weight: bold; border-radius: 8px; width: 75px; }
+        canvas { background: #111; display: block; margin: 5px auto; border: 2px solid #444; }
+        .btn { background: #555; color: #fff; border: none; padding: 15px; margin: 2px; font-weight: bold; border-radius: 8px; width: 85px; font-size: 1rem; touch-action: manipulation; }
+        .hp-b { width: 140px; height: 12px; background: #444; border: 1px solid #aaa; display: inline-block; border-radius: 6px; overflow: hidden; vertical-align: middle; }
+        .hp-f { height: 100%; background: #28a745; width: 100%; transition: width 0.1s; }
     </style>
 </head>
 <body>
-    <!-- 設定画面 -->
     <div id="sel-scr" class="screen active">
         <h3>キャラクター / モード 選択</h3>
-        <button class="char-btn selected" onclick="sCh('🦊')">🦊</button><button class="char-btn" onclick="sCh('🐻')">🐻</button><button class="char-btn" onclick="sCh('😀')">😀</button><button class="char-btn" onclick="sCh('🦉')">🦉</button><br><br>
-        <button id="m-cpu" class="mode-btn selected" onclick="sMd('cpu')">CPU(弱)</button><button id="m-cpu2" class="mode-btn" onclick="sMd('cpu2')">CPU(強)</button><button id="m-sd" class="mode-btn" onclick="sMd('sand')">練習</button><br><br>
-        <button style="background:#007bff; color:#fff; padding:10px 30px; border-radius:20px;" onclick="gSt()">バトル開始</button>
+        <div><button class="char-btn selected" onclick="sCh('🦊')">🦊</button><button class="char-btn" onclick="sCh('🐻')">🐻</button><button class="char-btn" onclick="sCh('😀')">😀</button><button class="char-btn" onclick="sCh('🦉')">🦉</button></div><br>
+        <div><button id="m-cpu" class="mode-btn selected" onclick="sMd('cpu')">CPU(弱)</button><button id="m-cpu2" class="mode-btn" onclick="sMd('cpu2')">CPU(強)</button><button id="m-sd" class="mode-btn" onclick="sMd('sand')">練習</button></div><br>
+        <button style="background:#007bff; color:#fff; padding:12px 40px; border-radius:25px; font-size:1.2rem; font-weight:bold;" onclick="gSt()">バトル開始</button>
     </div>
-    <!-- ゲーム画面 -->
     <div id="gm-scr" class="screen">
-        <div><span id="p1-e">🦊</span>:<span id="p1-p">0</span>% vs 👾:<span id="p2-p">0</span>%</div>
+        <div style="font-size:1.1rem; margin-bottom:5px;">
+            <span id="p1-e">🦊</span>: <div class="hp-b"><div id="p1-bar" class="hp-f"></div></div> (<span id="p1-p">1000</span>) vs 
+            <span id="p2-e">👾</span>: <div class="hp-b"><div id="p2-bar" class="hp-f" style="background:#dc3545;"></div></div> (<span id="p2-p">1000</span>)
+        </div>
         <canvas id="stage" width="480" height="200"></canvas>
         <div>
-            <button class="btn" id="b-l">←左</button><button class="btn" id="b-u">▲ジャンプ</button><button class="btn" id="b-d">▼しゃがむ</button><button class="btn" id="b-r">右→</button>
-            <br><button class="btn" id="b-a" style="width:160px; background:#007bff;">通常攻撃</button><button class="btn" id="b-s" style="width:160px; background:#e0a800;">スマッシュ</button>
+            <button class="btn" id="b-l">←左</button><button class="btn" id="b-u">▲飛</button><button class="btn" id="b-d">▼伏</button><button class="btn" id="b-r">右→</button>
+            <br><button class="btn" id="b-a" style="width:174px; background:#007bff;">通常攻撃</button><button class="btn" id="b-s" style="width:174px; background:#e0a800;">スマッシュ</button>
         </div>
     </div>
     <script>
         const cvs = document.getElementById("stage"), ctx = cvs.getContext("2d"), pf = {x:100, y:140, w:280, h:10};
         let cCh='🦊', cMd='cpu', gAc=false, keys={l:false, r:false};
         class Char {
-            constructor(x, y, e, isC) { this.x=x; this.y=y; this.e=e; this.isC=isC; this.vx=0; this.vy=0; this.p=0; this.jc=0; this.f=1; this.cr=false; this.ef=null; }
+            constructor(x, y, e, isC) { this.x=x; this.y=y; this.e=e; this.isC=isC; this.vx=0; this.vy=0; this.p=1000; this.jc=0; this.f=1; this.cr=false; this.ef=null; }
             up() {
-                this.vy += this.cr ? 0.8 : 0.4; this.x += this.vx; this.y += this.vy; this.vx *= 0.93; this.h = this.cr ? 14 : 24;
+                this.vy += this.cr ? 0.8 : 0.4; this.x += this.vx; this.y += this.vy; this.vx *= 0.85; this.h = this.cr ? 14 : 24;
                 if (this.x+20 > pf.x && this.x < pf.x+pf.w && this.y >= pf.y-this.h && this.y-this.vy <= pf.y-this.h+8) { this.y=pf.y-this.h; this.vy=0; this.jc=0; }
-                if (this.x < -40 || this.x > 520 || this.y > 240 || this.y < -100) { this.p=0; this.vx=0; this.vy=0; this.x=this.isC?300:160; this.y=50; this.cr=false; uUi(); }
+                if (this.x < -40 || this.x > 520 || this.y > 240 || this.y < -100) this.p = 0;
+                if (this.p <= 0) { alert(this.isC ? "あなたの勝ち！" : "あなたの負け..."); this.p=1000; p1.p=1000; p2.p=1000; this.x=this.isC?300:160; this.y=50; this.vx=0; this.vy=0; uUi(); }
             }
             dr() { ctx.save(); ctx.font=this.cr?"16px s-serif":"24px s-serif"; ctx.translate(this.x+10, this.y+10); if(this.f===-1) ctx.scale(-1,1); ctx.fillText(this.e,0,this.cr?5:8); ctx.restore(); if(this.ef){ ctx.fillStyle=this.ef.c; ctx.fillRect(this.ef.x,this.ef.y,this.ef.w,this.ef.h); if(--this.ef.t<=0)this.ef=null; } }
             jp() { if(this.jc<2) { this.vy=-7; this.jc++; this.cr=false; } }
@@ -46,23 +49,23 @@
         let p1=new Char(160,50,'🦊',false), p2=new Char(300,50,'👾',true);
         function sCh(e){ cCh=e; document.querySelectorAll('.char-btn').forEach(b=>b.classList.remove('selected')); event.target.classList.add('selected'); }
         function sMd(m){ cMd=m; document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected')); event.target.classList.add('selected'); }
-        function gSt(){ document.getElementById('sel-scr').classList.remove('active'); document.getElementById('gm-scr').classList.add('active'); p1.e=cCh; document.getElementById('p1-e').innerText=cCh; p2.e=(cMd==='sand')?'🪵':'👾'; p1.p=0; p2.p=0; uUi(); gAc=true; }
-        function uUi(){ document.getElementById("p1-p").innerText=p1.p; document.getElementById("p2-p").innerText=p2.p; }
+        function gSt(){ document.getElementById('sel-scr').classList.remove('active'); document.getElementById('gm-scr').classList.add('active'); p1.e=cCh; document.getElementById('p1-e').innerText=cCh; p2.e=(cMd==='sand')?'🪵':'👾'; document.getElementById('p2-e').innerText=p2.e; p1.p=1000; p2.p=1000; uUi(); gAc=true; }
+        function uUi(){ document.getElementById("p1-p").innerText=p1.p; document.getElementById("p2-p").innerText=p2.p; document.getElementById("p1-bar").style.width=(p1.p/10)+"%"; document.getElementById("p2-bar").style.width=(p2.p/10)+"%"; }
         function atk(a, t, s) {
-            if(a.cr) return; let rx=s?40:25, ry=25, d=s?12:4, kbm=s?1.2:0.5, c="rgba(255,255,255,0.4)";
-            if(!a.isC){ if(a.e==='🦊'&&s){rx=60; c="orange";} if(a.e==='🐻'&&s){kbm=1.7; d=18; c="gold";} if(a.e==='😀'&&s){rx=150; ry=8; c="cyan";} if(a.e==='🦉'&&s){ry=60; c="gray";} }
-            let fx=a.f===1?a.x+20:a.x-rx; a.attackEffect={x:fx, y:a.y, w:rx, h:ry, c:c, t:6};
+            if(a.cr) return; let rx=s?50:30, ry=25, d=s?120:40, c=a.isC?"rgba(150,0,255,0.5)":"rgba(255,255,255,0.4)";
+            if(!a.isC){ if(a.e==='🦊'&&s){rx=75; c="orange";} if(a.e==='🐻'&&s){d=200; c="gold";} if(a.e==='😀'&&s){rx=160; ry=10; c="cyan";} if(a.e==='🦉'&&s){ry=70; c="gray";} }
+            let fx=a.f===1?a.x+20:a.x-rx; a.ef={x:fx, y:a.y, w:rx, h:ry, c:c, t:6};
             let h=(a.f===1 && t.x>=a.x && t.x<=a.x+20+rx)||(a.f===-1 && t.x+20>=a.x-rx && t.x<=a.x);
-            if(h && Math.abs(a.y-t.y)<ry){ if(t.cr) d=Math.floor(d*0.5); t.p+=d; let kb=(t.p/9)+(s?7:3); t.vx=a.f*kb*kbm; t.vy=(a.e==='🦉'&&s&&!a.isC)?-kb*1.2:-kb*0.4; uUi(); }
+            if(h && Math.abs(a.y-t.y)<ry){ if(t.cr) d=Math.floor(d*0.5); t.p=Math.max(0,t.p-d); t.vx=a.f*(s?6:3); t.vy=s?-4:-2; uUi(); }
         }
-        function sBt(id, sFn, eFn){ const b=document.getElementById(id); b.addEventListener("touchstart",(e)=>{e.preventDefault();sFn();}); if(eFn)b.addEventListener("touchend",(e)=>{e.preventDefault();eFn();}); b.addEventListener("mousedown",sFn); if(eFn)b.addEventListener("mouseup",eFn); }
+        const sBt=(id,sFn,eFn)=>{ const b=document.getElementById(id); b.addEventListener("touchstart",(e)=>{e.preventDefault();sFn();},{passive:false}); if(eFn)b.addEventListener("touchend",(e)=>{e.preventDefault();eFn();},{passive:false}); b.addEventListener("mousedown",sFn); if(eFn)b.addEventListener("mouseup",eFn); };
         sBt("b-l",()=>{keys.l=true;p1.f=-1;},()=>{keys.l=false;}); sBt("b-r",()=>{keys.r=true;p1.f=1;},()=>{keys.r=false;}); sBt("b-u",()=>{p1.jp();}); sBt("b-d",()=>{p1.cr=true;},()=>{p1.cr=false;}); sBt("b-a",()=>{atk(p1,p2,false);}); sBt("b-s",()=>{atk(p1,p2,true);});
-        window.addEventListener("keydown",e=>{ if(!gAc)return; if(e.key==="ArrowLeft"||e.key==="a"){keys.l=true;p1.f=-1;} if(e.key==="ArrowRight"||e.key==="d"){keys.l=true;p1.f=1;} if(e.key==="ArrowUp"||e.key==="w")p1.jp(); if(e.key==="ArrowDown"||e.key==="s")p1.cr=true; if(e.key==="f")atk(p1,p2,false); if(e.key==="g")atk(p1,p2,true); });
-        window.addEventListener("keyup",e=>{ if(e.key==="ArrowLeft"||e.key==="a"||e.key==="ArrowRight"||e.key==="d")keys.l=keys.r=false; if(e.key==="ArrowDown"||e.key==="s")p1.cr=false; });
+        window.addEventListener("keydown",e=>{ if(!gAc)return; if(e.key==="ArrowLeft"||e.key==="a"){keys.l=true;p1.f=-1;} if(e.key==="ArrowRight"||e.key==="d"){keys.r=true;p1.f=1;} if(e.key==="ArrowUp"||e.key==="w")p1.jp(); if(e.key==="ArrowDown"||e.key==="s")p1.cr=true; if(e.key==="f")atk(p1,p2,false); if(e.key==="g")atk(p1,p2,true); });
+        window.addEventListener("keyup",e=>{ if(e.key==="ArrowLeft"||e.key==="a")keys.l=false; if(e.key==="ArrowRight"||e.key==="d")keys.r=false; if(e.key==="ArrowDown"||e.key==="s")p1.cr=false; });
         function loop() {
             if (gAc) {
-                ctx.clearRect(0, 0, cvs.width, cvs.height); if(keys.l)p1.vx=-2.5; if(keys.r)p1.vx=2.5; p1.up();
-                if(cMd!=='sand'){ let sp=(cMd==='cpu2')?1.4:0.7, ac=(cMd==='cpu2')?0.04:0.015; if(p2.x<pf.x||p2.x>pf.x+pf.w){if(Math.random()<0.03)p2.jp();} if(p2.x<p1.x){p2.x+=sp;p2.f=1;}else{p2.x-=sp;p2.f=-1;} if(Math.abs(p2.x-p1.x)<30&&Math.random()<ac){p2.cr=false;atk(p2,p1,Math.random()<0.2);} }
+                ctx.clearRect(0, 0, cvs.width, cvs.height); if(keys.l)p1.vx=-3; if(keys.r)p1.vx=3; p1.up();
+                if(cMd!=='sand'){ let sp=(cMd==='cpu2')?1.5:0.8, ac=(cMd==='cpu2')?0.04:0.015; if(p2.x<pf.x||p2.x>pf.x+pf.w){if(Math.random()<0.03)p2.jp();} if(p2.x<p1.x){p2.x+=sp;p2.f=1;}else{p2.x-=sp;p2.f=-1;} if(Math.abs(p2.x-p1.x)<35&&Math.random()<ac){p2.cr=false;atk(p2,p1,Math.random()<0.25);} }
                 p2.up(); ctx.fillStyle="#555"; ctx.fillRect(pf.x, pf.y, pf.w, pf.h); p1.dr(); p2.dr();
             }
             requestAnimationFrame(loop);
